@@ -1,0 +1,173 @@
+# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
+# SPDX-License-Identifier: MIT
+
+import digitalio
+import board
+import time
+from PIL import Image, ImageDraw, ImageFont
+from adafruit_rgb_display import st7735  # pylint: disable=unused-import
+
+# Configuration for CS and DC pins (these are PiTFT defaults):
+cs_pin = digitalio.DigitalInOut(board.CE0)
+dc_pin = digitalio.DigitalInOut(board.D25)
+reset_pin = digitalio.DigitalInOut(board.D24)
+
+# Config for display baudrate (default max is 24mhz):
+BAUDRATE = 24000000
+
+# Setup SPI bus using hardware SPI:
+spi = board.SPI()
+
+disp = st7735.ST7735R(
+    #dimentions 128 x 160
+    spi,
+    cs=cs_pin,
+    dc=dc_pin,
+    rst=reset_pin,
+    baudrate=BAUDRATE,
+)
+
+# Make sure to create image with mode 'RGB' for full color.
+if disp.rotation % 180 == 90:
+    height = disp.width  # we swap height/width to rotate it to landscape!
+    width = disp.height
+else:
+   width = disp.width  # we swap height/width to rotate it to landscape!
+   height = disp.height
+   
+# Create blank image for drawing.
+image = Image.new("RGB", (width, height))
+# Get drawing object to draw on image.
+draw = ImageDraw.Draw(image)
+
+#colours
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+YELLOW = (255, 222, 33)
+ORANGE = (255, 165, 0)
+RED = (255, 0, 0)
+
+def drawRectangle(xStart, yStart, height, width, colour):
+    xEnd = xStart + width
+    yEnd = yStart + height
+    draw.rectangle((xStart, yStart, xEnd, yEnd), fill=colour)   
+
+# Draw a black filled box as the background
+draw.rectangle((0, 0, width, height), fill=BLACK)
+
+disp.image(image)
+imageWidth = 32
+BORDER = 10
+FONTSIZE = 12
+
+#Next draw the solar charge image - work on animating as a project
+solarimage = Image.open("solar.jpg")
+solarimage = solarimage.resize((32, 32), Image.BICUBIC)
+
+#draw image from location
+xImage = int(BORDER/2)
+yImage = FONTSIZE + BORDER
+
+# Load a TTF Font
+font = ImageFont.truetype("/usr/share/fonts/truetype/quicksand/Quicksand-Bold.ttf", FONTSIZE)
+
+text = "SOLAR CHARGE LEVEL"
+draw.text((0,0),text,font=font,fill=YELLOW)
+
+bigBoxHeight = 20
+bigBoxStartx = BORDER*2 + imageWidth
+bigBoxStarty = height - bigBoxHeight
+
+refTime = time.monotonic()
+updateSpeed = 0.5
+z = 0
+
+while True:
+    now = time.monotonic()
+    
+    if now >= refTime + updateSpeed:
+        refTime = now
+        z+=1
+        #print(z)
+        
+    if z <= 2:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        drawRectangle(bigBoxStartx+1,bigBoxStarty+1,bigBoxHeight-3,73,BLACK)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=RED)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+    
+    elif z <= 3:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=BLACK)
+        disp.image(image)                
+        disp.image(solarimage,0,xImage,yImage)
+    
+    elif z <= 4:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        drawRectangle(bigBoxStartx+1,bigBoxStarty+1,bigBoxHeight-3,73,BLACK)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=RED)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+
+    elif z <= 5:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=BLACK)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+
+    elif z <= 6:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        drawRectangle(bigBoxStartx+1,bigBoxStarty+1,bigBoxHeight-3,73,BLACK)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=RED)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+
+    elif z <= 7:
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,RED)
+        text = "WARNING"
+        draw.text((bigBoxStartx+10,bigBoxStarty+2),text,font=font,fill=BLACK)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+        
+    elif z <= 10:
+        boxColour = RED
+        drawRectangle(52,210-10*z,bigBoxHeight/4,76,boxColour)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+
+    elif z <= 13:
+        boxColour = ORANGE
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,boxColour)
+        for x in range(8,11):
+            drawRectangle(52,210-10*x,bigBoxHeight/4,76,boxColour)
+        
+        drawRectangle(52,210-10*z,bigBoxHeight/4,76,boxColour)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+
+    elif z <= 19:
+        boxColour = YELLOW
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,boxColour)
+        for x in range(8,14):
+            drawRectangle(52,210-10*x,bigBoxHeight/4,76,boxColour)
+    
+        drawRectangle(52,210-10*z,bigBoxHeight/4,76,boxColour)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
+        
+    elif z > 30:
+        z=0
+        boxColour = BLACK
+        drawRectangle(bigBoxStartx,bigBoxStarty,bigBoxHeight,76,boxColour)
+        for x in range(8,20):
+            drawRectangle(52,210-10*x,bigBoxHeight/4,76,boxColour)
+        
+        drawRectangle(52,210-10*z,bigBoxHeight/4,76,boxColour)
+        disp.image(image)
+        disp.image(solarimage,0,xImage,yImage)
